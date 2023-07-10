@@ -1,6 +1,6 @@
 import base64
 from flask import Flask, request
-from google.cloud import secretmanager_v1beta1 as secretmanager
+from google.cloud import secretmanager
 from google.cloud import pubsub_v1
 import requests
 
