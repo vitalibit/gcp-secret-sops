@@ -1,9 +1,14 @@
-from flask import Flask
+import base64
+import functions_framework
+from google.cloud import secretmanager_v1beta1 as secretmanager
 
-app = Flask(__name__)
+def get_github_token():
+    client = secretmanager.SecretManagerServiceClient()
+    response = client.access_secret_version(request={"name": "projects/<project-id>/secrets/<secret-name>/versions/latest"})
+    return response.payload.data.decode("UTF-8")
 
-@app.route('/', methods=['POST'])
-def trigger_pipeline():
+@functions_framework.cloud_event
+def trigger_pipeline(cloud_event):
     # Отримати токен GitHub з GCP Secret Manager
     token = get_github_token()
 
@@ -19,7 +24,7 @@ def trigger_pipeline():
         }
     }
     response = requests.post(
-        "https://api.github.com/repos/vitalibit/flux-gitops/dispatches",
+        "https://api.github.com/repos/<owner>/<repo>/dispatches",
         headers=headers,
         json=payload
     )
@@ -28,13 +33,12 @@ def trigger_pipeline():
         print("Pipeline triggered successfully!")
     else:
         print(f"Failed to trigger pipeline. Status code: {response.status_code}, Message: {response.text}")
-        
+
+    # Декодувати дані повідомлення з Pub/Sub
+    data = base64.b64decode(cloud_event.data["message"]["data"]).decode("utf-8")
+    print("Received Pub/Sub message:", data)
+
+    # Викликати функцію trigger_pipeline для обробки повідомлення
+    trigger_pipeline(cloud_event)
+
     return 'OK'
-
-def get_github_token():
-    client = secretmanager.SecretManagerServiceClient()
-    response = client.access_secret_version(request={"name": "projects/352350778257/secrets/GITHUB_API/versions/1"})
-    return response.payload.data.decode("UTF-8")
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
