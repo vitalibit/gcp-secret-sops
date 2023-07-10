@@ -1,13 +1,9 @@
-import requests
-from google.cloud import pubsub_v1
-from google.cloud import secretmanager_v1beta1 as secretmanager
+from flask import Flask
 
-def get_github_token():
-    client = secretmanager.SecretManagerServiceClient()
-    response = client.access_secret_version(request={"name": "projects/352350778257/secrets/GITHUB_API/versions/1"})
-    return response.payload.data.decode("UTF-8")
+app = Flask(__name__)
 
-def trigger_pipeline(event, context):
+@app.route('/', methods=['POST'])
+def trigger_pipeline():
     # Отримати токен GitHub з GCP Secret Manager
     token = get_github_token()
 
@@ -32,16 +28,13 @@ def trigger_pipeline(event, context):
         print("Pipeline triggered successfully!")
     else:
         print(f"Failed to trigger pipeline. Status code: {response.status_code}, Message: {response.text}")
+        
+    return 'OK'
 
-def subscribe_to_pubsub_topic():
-    subscriber = pubsub_v1.SubscriberClient()
-    subscription_path = subscriber.subscription_path("k8s-k3s-386218", "token-changed-sub")
+def get_github_token():
+    client = secretmanager.SecretManagerServiceClient()
+    response = client.access_secret_version(request={"name": "projects/352350778257/secrets/GITHUB_API/versions/1"})
+    return response.payload.data.decode("UTF-8")
 
-    def callback(message):
-        # Викликати Cloud Function при отриманні повідомлення від Pub/Sub
-        trigger_pipeline(None, None)
-        message.ack()
-
-    subscriber.subscribe(subscription_path, callback=callback)
-
-subscribe_to_pubsub_topic()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
