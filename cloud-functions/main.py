@@ -37,8 +37,3 @@ def trigger_pipeline(cloud_event):
     # Декодувати дані повідомлення з Pub/Sub
     data = base64.b64decode(cloud_event.data["message"]["data"]).decode("utf-8")
     print("Received Pub/Sub message:", data)
-
-    # Викликати функцію trigger_pipeline для обробки повідомлення
-    trigger_pipeline(cloud_event)
-
-    return 'OK'
