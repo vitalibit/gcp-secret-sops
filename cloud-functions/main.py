@@ -4,7 +4,7 @@ from google.cloud import secretmanager_v1beta1 as secretmanager
 
 def get_github_token():
     client = secretmanager.SecretManagerServiceClient()
-    response = client.access_secret_version(request={"name": "projects/<project-id>/secrets/<secret-name>/versions/latest"})
+    response = client.access_secret_version(request={"name": "projects/352350778257/secrets/GITHUB_API/versions/1"})
     return response.payload.data.decode("UTF-8")
 
 @functions_framework.cloud_event
@@ -24,7 +24,7 @@ def trigger_pipeline(cloud_event):
         }
     }
     response = requests.post(
-        "https://api.github.com/repos/<owner>/<repo>/dispatches",
+        "https://api.github.com/repos/vitalibit/flux-gitops/dispatches",
         headers=headers,
         json=payload
     )
